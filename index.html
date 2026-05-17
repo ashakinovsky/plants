@@ -97,12 +97,16 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--bg3);color:var(--te
     <div class="no-img" id="noImg" style="display:none">No image available</div>
     <div class="inat-credit" id="inatCredit">Photo © iNaturalist</div>
   </div>
-  <div class="fields">
-    <div class="field-group"><label>Common name</label><input id="fCommon" placeholder="e.g. White Oak" autocomplete="off" spellcheck="false"></div>
-    <div class="field-group"><label>Scientific name</label><input id="fScientific" placeholder="e.g. Quercus alba" autocomplete="off" spellcheck="false"></div>
-    <div class="field-group"><label>Family</label><input id="fFamily" placeholder="e.g. Fagaceae" autocomplete="off" spellcheck="false"></div>
-    <div class="field-group"><label>Order</label><input id="fOrder" placeholder="e.g. Fagales" autocomplete="off" spellcheck="false"></div>
-  </div>
+  <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap" id="toggleBar">
+  <button class="filter-btn active" id="togFamily" onclick="toggleField('fFamily','togFamily')">Family</button>
+  <button class="filter-btn active" id="togOrder" onclick="toggleField('fOrder','togOrder')">Order</button>
+</div>
+<div class="fields">
+  <div class="field-group"><label>Common name</label><input id="fCommon" placeholder="e.g. Eastern Box Turtle" autocomplete="off" spellcheck="false"></div>
+  <div class="field-group"><label>Scientific name</label><input id="fScientific" placeholder="e.g. Terrapene carolina" autocomplete="off" spellcheck="false"></div>
+  <div class="field-group" id="wrapFamily"><label>Family</label><input id="fFamily" placeholder="e.g. Emydidae" autocomplete="off" spellcheck="false"></div>
+  <div class="field-group" id="wrapOrder"><label>Order</label><input id="fOrder" placeholder="e.g. Testudines" autocomplete="off" spellcheck="false"></div>
+</div>
   <div class="actions">
     <button class="btn" id="hintBtn" onclick="showHint()">Hint</button>
     <button class="btn btn-primary" id="submitBtn" onclick="checkAnswer()">Submit</button>
@@ -456,12 +460,13 @@ function checkAnswer(){
   if(answered)return;
   answered=true;
   const m=queue[current];
-  const fields=[
-    {id:'fCommon',key:'common',label:'Common name'},
+  const fields = [
+    {id:'fCommon',    key:'common',    label:'Common name'},
     {id:'fScientific',key:'scientific',label:'Scientific name'},
-    {id:'fFamily',key:'family',label:'Family'},
-    {id:'fOrder',key:'order',label:'Order'}
-  ];
+    {id:'fFamily',    key:'family',    label:'Family'},
+    {id:'fOrder',     key:'order',     label:'Order'}
+  ].filter(f => fieldEnabled[f.id] !== false);
+  const totalFields = fields.length;
   let correct=0,html='';
   fields.forEach(f=>{
     const el=document.getElementById(f.id);
@@ -474,10 +479,10 @@ function checkAnswer(){
     else correct++;
   });
   total++;
-  if(correct===4){score++;streak++;}else{streak=0;missedAnimals.push(m);}
+  if(correct===totalFields){score++;streak++;}else{streak=0;missedAnimals.push(m);}
   updateScorebar();
   const box=document.getElementById('feedbackBox');
-  if(correct===4){
+  if(correct===totalFields){
     box.innerHTML='<div class="feedback correct-all"><div class="feedback-row"><span class="icon">✓</span>All correct! Next question in a moment…</div></div>';
     setTimeout(nextAnimal,1800);
   } else {
@@ -541,6 +546,15 @@ document.addEventListener('keydown',e=>{
 });
 buildFilterBar();
 rebuildQueue();
+  const fieldEnabled = {fFamily: true, fOrder: true};
+
+function toggleField(fieldId, btnId) {
+  fieldEnabled[fieldId] = !fieldEnabled[fieldId];
+  const wrap = document.getElementById('wrap' + fieldId[1].toUpperCase() + fieldId.slice(2));
+  const btn = document.getElementById(btnId);
+  wrap.style.display = fieldEnabled[fieldId] ? '' : 'none';
+  btn.classList.toggle('active', fieldEnabled[fieldId]);
+}
 </script>
 </body>
 </html>

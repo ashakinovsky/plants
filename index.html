@@ -365,7 +365,7 @@ const photoCache = {};
 async function fetchTaxonPhoto(scientific) {
   if (!photoCache[scientific]) {
     try {
-      const url = `https://api.inaturalist.org/v1/taxa?q=${encodeURIComponent(scientific)}&rank=species&per_page=1`;
+      const url = `https://api.inaturalist.org/v1/taxa?q=${encodeURIComponent(scientific)}&rank=species&per_page=1&all_names=true`;
       const res = await fetch(url);
       const data = await res.json();
       const taxon = data.results && data.results[0];

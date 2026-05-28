@@ -415,11 +415,34 @@ function rebuildQueue(){
   updateScorebar();loadAnimal();
 }
 
+  function showPhoto() {
+  const img = document.getElementById('animalImg');
+  const noImg = document.getElementById('noImg');
+  const credit = document.getElementById('inatCredit');
+  const refreshBtn = document.getElementById('refreshPhotoBtn');
+  if (currentPhotoList.length) {
+    img.style.display = 'block';
+    img.classList.add('loading');
+    img.onload = () => {
+      img.classList.remove('loading');
+      credit.style.display = 'block';
+      refreshBtn.style.display = currentPhotoList.length > 1 ? 'block' : 'none';
+    };
+    img.onerror = () => { img.style.display = 'none'; noImg.style.display = 'flex'; };
+    img.src = currentPhotoList[currentPhotoIndex];
+  } else {
+    noImg.style.display = 'flex';
+  }
+}
+  
 async function loadAnimal(){
   if(current>=queue.length){showEndModal();return;}
   answered=false;hintStage=0;
   const m=queue[current];
   const token=++loadingToken;
+
+  let currentPhotoList = [];
+let currentPhotoIndex = 0;
 
   const img=document.getElementById('animalImg');
   const noImg=document.getElementById('noImg');
@@ -443,20 +466,12 @@ async function loadAnimal(){
   document.getElementById('progressFill').style.width=((current/queue.length)*100)+'%';
   document.getElementById('fCommon').focus();
 
-  const photoUrl = await fetchTaxonPhoto(m.scientific);
-  if(token !== loadingToken) return;
-
-  loadMsg.style.display='none';
-  if(photoUrl){
-    img.style.display='block';
-    img.classList.add('loading');
-    img.onload=()=>{img.classList.remove('loading'); credit.style.display='block';};
-    img.onerror=()=>{img.style.display='none'; noImg.style.display='flex'; credit.style.display='none';};
-    img.src=photoUrl;
-    img.alt='Identify this plant: '+m.common;
-  } else {
-    noImg.style.display='flex';
-  }
+  const photos = await fetchTaxonPhoto(m.scientific);
+if (token !== loadingToken) return;
+currentPhotoList = photos;
+currentPhotoIndex = 0;
+loadMsg.style.display = 'none';
+showPhoto();
 }
 
 function normalize(s){return s.trim().toLowerCase().replace(/\s+/g,' ').replace(/[()]/g,'').replace(/\bor\b.*$/,'').trim();}
@@ -548,11 +563,25 @@ function restartQuiz(){
 document.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&document.activeElement.tagName==='INPUT'&&!answered)checkAnswer();
 });
-buildFilterBar();
-rebuildQueue();
-  const fieldEnabled = {fFamily: true, fOrder: true};
+const fieldEnabled = {fFamily: true, fOrder: true};
 
 function toggleField(fieldId, btnId) {
+  fieldEnabled[fieldId] = !fieldEnabled[fieldId];
+  const wrapMap = {fFamily: 'wrapFamily', fOrder: 'wrapOrder'};
+  const wrap = document.getElementById(wrapMap[fieldId]);
+  const btn = document.getElementById(btnId);
+  if (wrap) wrap.style.display = fieldEnabled[fieldId] ? '' : 'none';
+  btn.classList.toggle('active', fieldEnabled[fieldId]);
+}
+
+function refreshPhoto() {
+  if (currentPhotoList.length < 2) return;
+  currentPhotoIndex = (currentPhotoIndex + 1) % currentPhotoList.length;
+  showPhoto();
+}
+
+buildFilterBar();
+rebuildQueue();
   fieldEnabled[fieldId] = !fieldEnabled[fieldId];
   const wrap = document.getElementById('wrap' + fieldId[1].toUpperCase() + fieldId.slice(2));
   const btn = document.getElementById(btnId);

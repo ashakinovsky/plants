@@ -363,17 +363,33 @@ const PLANTS = BIRDS.filter(p => {
 const photoCache = {};
 
 async function fetchTaxonPhoto(scientific) {
-  if (!photoCache[scientific]) {
-    try {
-      const url = `https://api.inaturalist.org/v1/taxa?q=${encodeURIComponent(scientific)}&rank=species&per_page=1&all_names=true`;
-      const res = await fetch(url);
-      const data = await res.json();
-      const taxon = data.results && data.results[0];
-      const photos = taxon && taxon.taxon_photos ? taxon.taxon_photos.map(p => p.photo.medium_url).filter(Boolean) : [];
-      if (taxon && taxon.default_photo) photos.unshift(taxon.default_photo.medium_url);
-      photoCache[scientific] = [...new Set(photos)];
-    } catch(e) {}
-  }
+  if (photoCache[scientific]) return photoCache[scientific];
+  try {
+    // First get the taxon ID
+    const taxaUrl = `https://api.inaturalist.org/v1/taxa?q=${encodeURIComponent(scientific)}&rank=species&per_page=1`;
+    const taxaRes = await fetch(taxaUrl);
+    const taxaData = await taxaRes.json();
+    const taxon = taxaData.results && taxaData.results[0];
+    if (!taxon) { photoCache[scientific] = []; return []; }
+
+    // Then fetch observations with photos for that taxon
+    const obsUrl = `https://api.inaturalist.org/v1/observations?taxon_id=${taxon.id}&quality_grade=research&photos=true&per_page=10&order_by=votes`;
+    const obsRes = await fetch(obsUrl);
+    const obsData = await obsRes.json();
+    const photos = [];
+    if (obsData.results) {
+      obsData.results.forEach(obs => {
+        obs.photos && obs.photos.forEach(p => {
+          if (p.url) photos.push(p.url.replace('square', 'medium'));
+        });
+      });
+    }
+    // Fall back to default photo if no observations found
+    if (photos.length === 0 && taxon.default_photo && taxon.default_photo.medium_url) {
+      photos.push(taxon.default_photo.medium_url);
+    }
+    photoCache[scientific] = [...new Set(photos)];
+  } catch(e) {}
   return photoCache[scientific] || [];
 }
 

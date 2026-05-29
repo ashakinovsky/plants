@@ -39,11 +39,19 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--bg3);color:var(--te
 .filter-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
 .filter-btn{font-size:11px;padding:4px 10px;border-radius:12px;border:0.5px solid var(--border2);background:var(--bg);color:var(--text2);cursor:pointer;font-family:'Source Sans 3',sans-serif;transition:all 0.15s}
 .filter-btn.active{background:var(--green);border-color:var(--green-dark);color:#fff;font-weight:600}
-.img-wrap{width:100%;aspect-ratio:16/9;background:var(--bg2);border-radius:var(--radius-lg);overflow:hidden;border:0.5px solid var(--border);margin-bottom:16px;position:relative}
-.img-wrap img{width:100%;height:100%;object-fit:contain;display:block;transition:opacity 0.3s}
-.img-wrap img.loading{opacity:0}
-.no-img{display:flex;align-items:center;justify-content:center;height:100%;font-size:14px;color:var(--text3);font-style:italic}
-.img-loading-msg{display:flex;align-items:center;justify-content:center;height:100%;font-size:14px;color:var(--text3)}
+/* ── two-panel photo layout ── */
+.img-panels{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+@media(max-width:480px){.img-panels{grid-template-columns:1fr}}
+.img-panel{position:relative;aspect-ratio:4/3;background:var(--bg2);border-radius:var(--radius-lg);overflow:hidden;border:0.5px solid var(--border)}
+.img-panel img{width:100%;height:100%;object-fit:cover;display:block;transition:opacity 0.3s}
+.img-panel img.loading{opacity:0}
+.panel-label{position:absolute;top:7px;left:8px;font-size:10px;font-weight:600;color:rgba(255,255,255,0.92);text-shadow:0 1px 3px rgba(0,0,0,0.55);background:rgba(0,0,0,0.32);padding:2px 7px;border-radius:4px;pointer-events:none;letter-spacing:0.2px}
+.panel-credit{position:absolute;bottom:6px;right:8px;font-size:10px;color:rgba(255,255,255,0.85);text-shadow:0 1px 3px rgba(0,0,0,0.6);background:rgba(0,0,0,0.25);padding:2px 6px;border-radius:4px;pointer-events:none;display:none}
+.panel-refresh{position:absolute;bottom:6px;left:8px;background:rgba(0,0,0,0.42);border:none;border-radius:6px;color:#fff;font-size:11px;padding:3px 8px;cursor:pointer;font-family:'Source Sans 3',sans-serif;display:none;transition:background 0.15s;backdrop-filter:blur(2px)}
+.panel-refresh:hover{background:rgba(0,0,0,0.62)}
+.panel-refresh:disabled{opacity:0.45;cursor:default}
+.no-img{display:flex;align-items:center;justify-content:center;height:100%;font-size:13px;color:var(--text3);font-style:italic}
+.img-loading-msg{display:flex;align-items:center;justify-content:center;height:100%;font-size:13px;color:var(--text3)}
 .fields{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
 @media(max-width:480px){.fields{grid-template-columns:1fr}}
 .field-group{display:flex;flex-direction:column;gap:4px}
@@ -75,7 +83,7 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--bg3);color:var(--te
 .modal h2{font-family:'Playfair Display',serif;font-size:22px;margin-bottom:8px;color:var(--text)}
 .modal .big-score{font-size:52px;font-weight:600;color:var(--green);margin:12px 0}
 .modal p{font-size:14px;color:var(--text2);margin-bottom:20px}
-.inat-credit{position:absolute;bottom:6px;right:8px;font-size:10px;color:rgba(255,255,255,0.85);text-shadow:0 1px 3px rgba(0,0,0,0.6);background:rgba(0,0,0,0.25);padding:2px 6px;border-radius:4px;pointer-events:none;display:none}
+
 </style>
 </head>
 <body>
@@ -91,13 +99,24 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--bg3);color:var(--te
   </div>
   <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
   <div class="filter-bar" id="filterBar"></div>
-  <div class="img-wrap" id="imgWrap">
-    <div class="img-loading-msg" id="imgLoadingMsg">Loading photo…</div>
-    <img id="animalImg" src="" alt="Plant to identify" style="display:none">
-    <div class="no-img" id="noImg" style="display:none">No image available</div>
-    <div class="inat-credit" id="inatCredit">Photo © iNaturalist</div>
-    <div class="inat-credit" id="inatCredit">Photo © iNaturalist</div>
-<button id="refreshPhotoBtn" onclick="refreshPhoto()" style="position:absolute;bottom:8px;left:8px;font-size:11px;padding:3px 8px;border-radius:6px;border:none;background:rgba(0,0,0,0.4);color:#fff;cursor:pointer;display:none">↻ New photo</button>
+  <div class="img-panels" id="imgPanels">
+    <!-- Left: official taxon photo -->
+    <div class="img-panel" id="panelTaxon">
+      <div class="img-loading-msg" id="taxonLoadMsg">Loading…</div>
+      <img id="taxonImg" src="" alt="" style="display:none">
+      <div class="no-img" id="taxonNoImg" style="display:none">No taxon photo</div>
+      <div class="panel-label">iNaturalist taxon</div>
+      <div class="panel-credit" id="taxonCredit">© iNaturalist</div>
+    </div>
+    <!-- Right: NC observation photo (refreshable) -->
+    <div class="img-panel" id="panelObs">
+      <div class="img-loading-msg" id="obsLoadMsg">Loading…</div>
+      <img id="obsImg" src="" alt="" style="display:none">
+      <div class="no-img" id="obsNoImg" style="display:none">No NC photo</div>
+      <div class="panel-label" id="obsLabel">📍 NC observation</div>
+      <div class="panel-credit" id="obsCredit">© iNaturalist</div>
+      <button class="panel-refresh" id="refreshBtn" onclick="refreshObsPhoto()">🔄 New photo</button>
+    </div>
   </div>
   <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap" id="toggleBar">
   <button class="filter-btn active" id="togFamily" onclick="toggleField('fFamily','togFamily')">Family</button>
@@ -359,44 +378,62 @@ const PLANTS = BIRDS.filter(p => {
   return true;
 });
 
-// Cache: scientific name -> photo URL
+// Cache: scientific -> {taxonUrl, ncPhotos: [{url}], worldwidePhotos: [{url}]}
 const photoCache = {};
+const NC_PLACE_ID = 14;
 
-async function getObservationPhotos(taxonId, placeId) {
-  const url = `https://api.inaturalist.org/v1/observations?taxon_id=${taxonId}&quality_grade=research&photos=true&per_page=10&order_by=votes${placeId ? '&place_id='+placeId : ''}`;
-  const res = await fetch(url);
-  const data = await res.json();
-  const photos = [];
-  if (data.results) {
-    data.results.forEach(obs => {
-      obs.photos && obs.photos.forEach(p => {
-        if (p.url) photos.push(p.url.replace('square', 'medium'));
-      });
-    });
-  }
-  return [...new Set(photos)];
-}
-
-async function fetchTaxonPhoto(scientific) {
+async function fetchPhotos(scientific) {
   if (photoCache[scientific]) return photoCache[scientific];
-  try {
-    const taxaUrl = `https://api.inaturalist.org/v1/taxa?q=${encodeURIComponent(scientific)}&rank=species&per_page=1`;
-    const taxaRes = await fetch(taxaUrl);
-    const taxaData = await taxaRes.json();
-    const taxon = taxaData.results && taxaData.results[0];
-    if (!taxon) { photoCache[scientific] = []; return []; }
+  let taxonUrl = null;
+  const ncPhotos = [];
+  const worldwidePhotos = [];
 
-    let photos = await getObservationPhotos(taxon.id, 36);
-    if (photos.length < 3) {
-      const more = await getObservationPhotos(taxon.id, null);
-      photos = [...new Set([...photos, ...more])];
+  try {
+    const taxonRes = await fetch(`https://api.inaturalist.org/v1/taxa?q=${encodeURIComponent(scientific)}&rank=species&per_page=1`);
+    const taxonData = await taxonRes.json();
+    const taxon = taxonData.results && taxonData.results[0];
+    if (taxon) {
+      // Official taxon photo
+      if (taxon.default_photo && taxon.default_photo.medium_url) {
+        taxonUrl = taxon.default_photo.medium_url;
+      }
+
+      // NC observations (up to 8)
+      const ncRes = await fetch(
+        `https://api.inaturalist.org/v1/observations?taxon_id=${taxon.id}&place_id=${NC_PLACE_ID}&quality_grade=research&has[]=photos&per_page=8&order=random`
+      );
+      const ncData = await ncRes.json();
+      if (ncData.results) {
+        for (const obs of ncData.results) {
+          if (obs.photos && obs.photos[0] && obs.photos[0].url) {
+            ncPhotos.push({ url: obs.photos[0].url.replace('square', 'medium') });
+          }
+        }
+      }
+
+      // Worldwide fallback if NC is sparse
+      if (ncPhotos.length < 3) {
+        const wwRes = await fetch(
+          `https://api.inaturalist.org/v1/observations?taxon_id=${taxon.id}&quality_grade=research&has[]=photos&per_page=8&order=random`
+        );
+        const wwData = await wwRes.json();
+        if (wwData.results) {
+          for (const obs of wwData.results) {
+            if (obs.photos && obs.photos[0] && obs.photos[0].url) {
+              const url = obs.photos[0].url.replace('square', 'medium');
+              if (!ncPhotos.find(p => p.url === url)) {
+                worldwidePhotos.push({ url });
+              }
+            }
+          }
+        }
+      }
     }
-    if (photos.length === 0 && taxon.default_photo && taxon.default_photo.medium_url) {
-      photos.push(taxon.default_photo.medium_url);
-    }
-    photoCache[scientific] = photos;
   } catch(e) {}
-  return photoCache[scientific] || [];
+
+  const result = { taxonUrl, ncPhotos, worldwidePhotos };
+  photoCache[scientific] = result;
+  return result;
 }
 
 const ORDERS=[...new Set(PLANTS.map(m=>m.order))].sort();
@@ -405,9 +442,8 @@ let activeOrders=new Set(ORDERS);
 let missedAnimals=[];
 let quizStartTime=null;
 let loadingToken=0;
-
-let currentPhotoList = [];
-let currentPhotoIndex = 0;
+let obsPhotos = [];
+let obsIndex = 0;
 
 function buildFilterBar(){
   const bar=document.getElementById('filterBar');
@@ -442,43 +478,45 @@ function rebuildQueue(){
   updateScorebar();loadAnimal();
 }
 
-  function showPhoto() {
-  const img = document.getElementById('animalImg');
-  const noImg = document.getElementById('noImg');
-  const credit = document.getElementById('inatCredit');
-  const refreshBtn = document.getElementById('refreshPhotoBtn');
-  if (currentPhotoList.length) {
-    img.style.display = 'block';
-    img.classList.add('loading');
-    img.onload = () => {
-      img.classList.remove('loading');
-      credit.style.display = 'block';
-      refreshBtn.style.display = currentPhotoList.length > 1 ? 'block' : 'none';
-    };
-    img.onerror = () => { img.style.display = 'none'; noImg.style.display = 'flex'; };
-    img.src = currentPhotoList[currentPhotoIndex];
-  } else {
-    noImg.style.display = 'flex';
-  }
+function setImgPanel(imgId, noImgId, creditId, url, label) {
+  const img = document.getElementById(imgId);
+  const noImg = document.getElementById(noImgId);
+  const credit = document.getElementById(creditId);
+  img.style.display = 'block';
+  img.classList.add('loading');
+  img.onload = () => { img.classList.remove('loading'); credit.style.display = 'block'; };
+  img.onerror = () => { img.style.display = 'none'; noImg.style.display = 'flex'; credit.style.display = 'none'; };
+  img.src = url;
+  img.alt = label;
 }
-  
+
+function refreshObsPhoto() {
+  if (obsPhotos.length <= 1) return;
+  const btn = document.getElementById('refreshBtn');
+  btn.disabled = true;
+  obsIndex = (obsIndex + 1) % obsPhotos.length;
+  const m = queue[current];
+  document.getElementById('obsImg').classList.add('loading');
+  setTimeout(() => {
+    setImgPanel('obsImg', 'obsNoImg', 'obsCredit', obsPhotos[obsIndex].url, m.common);
+    setTimeout(() => { btn.disabled = false; }, 500);
+  }, 150);
+}
+
 async function loadAnimal(){
   if(current>=queue.length){showEndModal();return;}
   answered=false;hintStage=0;
   const m=queue[current];
   const token=++loadingToken;
 
-  
-
-  const img=document.getElementById('animalImg');
-  const noImg=document.getElementById('noImg');
-  const loadMsg=document.getElementById('imgLoadingMsg');
-  const credit=document.getElementById('inatCredit');
-  img.style.display='none';
-  noImg.style.display='none';
-  credit.style.display='none';
-  loadMsg.style.display='flex';
-  loadMsg.textContent='Loading photo…';
+  // Reset both panels
+  ['taxonImg','obsImg'].forEach(id => { const el = document.getElementById(id); el.style.display='none'; el.src=''; });
+  ['taxonNoImg','obsNoImg'].forEach(id => document.getElementById(id).style.display='none');
+  ['taxonCredit','obsCredit'].forEach(id => document.getElementById(id).style.display='none');
+  document.getElementById('taxonLoadMsg').style.display = 'flex';
+  document.getElementById('obsLoadMsg').style.display = 'flex';
+  document.getElementById('refreshBtn').style.display = 'none';
+  document.getElementById('obsLabel').textContent = '📍 NC observation';
 
   ['fCommon','fScientific','fFamily','fOrder'].forEach(id=>{
     const el=document.getElementById(id);el.value='';el.className='';el.disabled=false;
@@ -492,12 +530,36 @@ async function loadAnimal(){
   document.getElementById('progressFill').style.width=((current/queue.length)*100)+'%';
   document.getElementById('fCommon').focus();
 
-  const photos = await fetchTaxonPhoto(m.photoName || m.scientific);
-if (token !== loadingToken) return;
-currentPhotoList = photos;
-currentPhotoIndex = 0;
-loadMsg.style.display = 'none';
-showPhoto();
+  const result = await fetchPhotos(m.photoName || m.scientific);
+  if (token !== loadingToken) return;
+
+  // Left panel: official taxon photo
+  document.getElementById('taxonLoadMsg').style.display = 'none';
+  if (result && result.taxonUrl) {
+    setImgPanel('taxonImg', 'taxonNoImg', 'taxonCredit', result.taxonUrl, m.common);
+  } else {
+    document.getElementById('taxonNoImg').style.display = 'flex';
+  }
+
+  // Right panel: NC (or worldwide fallback) observation photos
+  document.getElementById('obsLoadMsg').style.display = 'none';
+  const ncPhotos = result ? result.ncPhotos : [];
+  const wwPhotos = result ? result.worldwidePhotos : [];
+  const usingNC = ncPhotos.length > 0;
+  obsPhotos = usingNC ? ncPhotos : wwPhotos;
+  obsIndex = 0;
+  document.getElementById('obsLabel').textContent = usingNC ? '📍 NC observation' : '🌎 Worldwide obs.';
+
+  if (obsPhotos.length > 0) {
+    setImgPanel('obsImg', 'obsNoImg', 'obsCredit', obsPhotos[0].url, m.common);
+    if (obsPhotos.length > 1) {
+      const btn = document.getElementById('refreshBtn');
+      btn.style.display = 'block';
+      btn.disabled = false;
+    }
+  } else {
+    document.getElementById('obsNoImg').style.display = 'flex';
+  }
 }
 
 function normalize(s){return s.trim().toLowerCase().replace(/\s+/g,' ').replace(/[()]/g,'').replace(/\bor\b.*$/,'').trim();}
@@ -600,11 +662,6 @@ function toggleField(fieldId, btnId) {
   btn.classList.toggle('active', fieldEnabled[fieldId]);
 }
 
-function refreshPhoto() {
-  if (currentPhotoList.length < 2) return;
-  currentPhotoIndex = (currentPhotoIndex + 1) % currentPhotoList.length;
-  showPhoto();
-}
 
 buildFilterBar();
 rebuildQueue();
